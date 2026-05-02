@@ -1,0 +1,220 @@
+{
+  "name": "Sports Video Media Assets Upload v4",
+  "nodes": [
+    {
+      "id": "wh1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "name": "Webhook",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "svma-upload-v4",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryData": false
+        }
+      },
+      "webhookId": "svma-upload-v4"
+    },
+    {
+      "id": "set1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "name": "Prepare Row",
+      "position": [
+        300,
+        300
+      ],
+      "parameters": {
+        "mode": "raw",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "news_id",
+              "value": "={{ $json.news_id }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "event",
+              "value": "={{ $json.event }}",
+              "type": "string"
+            },
+            {
+              "id": "layout",
+              "value": "={{ $json.layout }}",
+              "type": "string"
+            },
+            {
+              "id": "video_path",
+              "value": "={{ $json.video_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "video_drive_id",
+              "value": "={{ $json.video_drive_id }}",
+              "type": "string"
+            },
+            {
+              "id": "video_drive_link",
+              "value": "={{ $json.video_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_path",
+              "value": "={{ $json.audio_path }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_drive_id",
+              "value": "={{ $json.audio_drive_id }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_drive_link",
+              "value": "={{ $json.audio_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "image_urls",
+              "value": "={{ $json.image_urls }}",
+              "type": "string"
+            },
+            {
+              "id": "images_drive_ids",
+              "value": "={{ $json.images_drive_ids }}",
+              "type": "string"
+            },
+            {
+              "id": "images_drive_links",
+              "value": "={{ $json.images_drive_links }}",
+              "type": "string"
+            },
+            {
+              "id": "speech_content",
+              "value": "={{ $json.speech_content }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_voice",
+              "value": "={{ $json.tts_voice }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_rate",
+              "value": "={{ $json.tts_rate }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_volume",
+              "value": "={{ $json.tts_volume }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "webhook_url",
+              "value": "={{ $json.webhook_url }}",
+              "type": "string"
+            },
+            {
+              "id": "created_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dt1",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "name": "Insert to Data Table",
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1MsWtZuWsQe7PJ75"
+        },
+        "columns": "={{ JSON.stringify($json) }}",
+        "options": {
+          "optimizeBulk": false
+        }
+      }
+    },
+    {
+      "id": "respond1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "name": "Respond Webhook",
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok', news_id: $json.news_id, video_drive_link: $json.video_drive_link, audio_drive_link: $json.audio_drive_link }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Row": {
+      "main": [
+        [
+          {
+            "node": "Insert to Data Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert to Data Table": {
+      "main": [
+        [
+          {
+            "node": "Respond Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}

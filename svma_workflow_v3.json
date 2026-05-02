@@ -1,0 +1,462 @@
+{
+  "name": "Sports Video Media Assets Upload v3",
+  "nodes": [
+    {
+      "id": "wh1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "name": "Webhook",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "svma-upload-v3",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryData": false
+        }
+      },
+      "webhookId": "svma-upload-v3"
+    },
+    {
+      "id": "set1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "name": "Parse Payload",
+      "position": [
+        300,
+        300
+      ],
+      "parameters": {
+        "mode": "raw",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "news_id",
+              "value": "={{ $json.news_id }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "event",
+              "value": "={{ $json.event }}",
+              "type": "string"
+            },
+            {
+              "id": "layout",
+              "value": "={{ $json.layout }}",
+              "type": "string"
+            },
+            {
+              "id": "video_drive_link",
+              "value": "={{ $json.video_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "video_drive_id",
+              "value": "={{ $json.video_drive_id }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_base64",
+              "value": "={{ $json.audio_base64 }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_path",
+              "value": "={{ $json.audio_path }}",
+              "type": "string"
+            },
+            {
+              "id": "image_urls",
+              "value": "={{ $json.image_urls }}",
+              "type": "string"
+            },
+            {
+              "id": "speech_content",
+              "value": "={{ $json.speech_content }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_voice",
+              "value": "={{ $json.tts_voice }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_rate",
+              "value": "={{ $json.tts_rate }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_volume",
+              "value": "={{ $json.tts_volume }}",
+              "type": "string"
+            },
+            {
+              "id": "webhook_url",
+              "value": "={{ $json.webhook_url }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "created_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "switch1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "name": "Has Audio Base64?",
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.audio_base64 ? 0 : 1 }}",
+        "fallbackOutput": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "gdrive_audio1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "name": "Upload Audio to Drive",
+      "position": [
+        900,
+        180
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CRED_ID",
+          "name": "Google Drive"
+        }
+      },
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $('Parse Payload').item.json.news_id }}_audio.ogg",
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root"
+        },
+        "options": {
+          "simplifyOutput": true
+        }
+      }
+    },
+    {
+      "id": "skip_audio1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "name": "Skip Audio (no base64)",
+      "position": [
+        900,
+        420
+      ],
+      "parameters": {
+        "mode": "raw",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "audio_drive_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "audio_drive_link",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "name": "Merge Results",
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2,
+        "options": {}
+      }
+    },
+    {
+      "id": "set_row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "name": "Prepare Data Table Row",
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "mode": "raw",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "news_id",
+              "value": "={{ $('Parse Payload').item.json.news_id }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "value": "={{ $('Parse Payload').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "event",
+              "value": "={{ $('Parse Payload').item.json.event }}",
+              "type": "string"
+            },
+            {
+              "id": "layout",
+              "value": "={{ $('Parse Payload').item.json.layout }}",
+              "type": "string"
+            },
+            {
+              "id": "video_path",
+              "value": "={{ $('Parse Payload').item.json.video_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "video_drive_id",
+              "value": "={{ $('Parse Payload').item.json.video_drive_id }}",
+              "type": "string"
+            },
+            {
+              "id": "video_drive_link",
+              "value": "={{ $('Parse Payload').item.json.video_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_path",
+              "value": "={{ $('Parse Payload').item.json.audio_path }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_drive_id",
+              "value": "={{ $json.audio_drive_id }}",
+              "type": "string"
+            },
+            {
+              "id": "audio_drive_link",
+              "value": "={{ $json.audio_drive_link }}",
+              "type": "string"
+            },
+            {
+              "id": "image_urls",
+              "value": "={{ $('Parse Payload').item.json.image_urls }}",
+              "type": "string"
+            },
+            {
+              "id": "speech_content",
+              "value": "={{ $('Parse Payload').item.json.speech_content }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_voice",
+              "value": "={{ $('Parse Payload').item.json.tts_voice }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_rate",
+              "value": "={{ $('Parse Payload').item.json.tts_rate }}",
+              "type": "string"
+            },
+            {
+              "id": "tts_volume",
+              "value": "={{ $('Parse Payload').item.json.tts_volume }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "webhook_url",
+              "value": "={{ $('Parse Payload').item.json.webhook_url }}",
+              "type": "string"
+            },
+            {
+              "id": "created_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dt_insert",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "name": "Insert to Data Table",
+      "position": [
+        1800,
+        300
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1MsWtZuWsQe7PJ75"
+        },
+        "columns": "={{ JSON.stringify($json) }}",
+        "options": {
+          "optimizeBulk": false
+        }
+      }
+    },
+    {
+      "id": "respond1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "name": "Respond Webhook",
+      "position": [
+        2100,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok', news_id: $('Parse Payload').item.json.news_id, video_drive_link: $('Parse Payload').item.json.video_drive_link, audio_drive_link: $json.audio_drive_link }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Payload": {
+      "main": [
+        [
+          {
+            "node": "Has Audio Base64?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Audio Base64?": {
+      "main": [
+        [
+          {
+            "node": "Upload Audio to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Audio (no base64)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Audio to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Audio (no base64)": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data Table Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data Table Row": {
+      "main": [
+        [
+          {
+            "node": "Insert to Data Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert to Data Table": {
+      "main": [
+        [
+          {
+            "node": "Respond Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}

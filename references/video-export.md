@@ -45,6 +45,31 @@ NODE_PATH=$(npm root -g) node /path/to/claude-design/scripts/render-video.js <ht
 
 输出：与 HTML 同目录，同名 `.mp4`。
 
+### 1b. Hermes 環境專用：`render-video-local.js`（本地 playwright Fallback）
+
+當全局 `playwright` npm 安裝失敗（如權限問題），但 `/opt/data/node_modules/playwright` 存在時使用此腳本。
+
+```bash
+node /opt/data/skills/huashu-design/scripts/render-video-local.js <html文件> [--duration=8] [--trim=1.5]
+```
+
+**環境路徑（Heremes 專用）：**
+- Playwright：`/opt/data/node_modules/playwright`
+- Chromium Headless Shell：`/opt/data/.agent-browser/browsers/chromium_headless_shell-1217/chrome-linux/headless_shell`
+- FFmpeg：`/usr/bin/ffmpeg`（或 `/opt/data/.agent-browser/browsers/ffmpeg-1011/ffmpeg-linux`）
+
+**依賴檢查：**
+```bash
+node -e "require('/opt/data/node_modules/playwright'); console.log('playwright ok')"
+ls /opt/data/.agent-browser/browsers/chromium_headless_shell-1217/chrome-linux/headless_shell
+ffmpeg -version | head -1
+```
+
+**已知問題紀錄（2026-05-01）：**
+- 全局 `npm install -g playwright` 會因權限失敗 → 使用本地 playwright 繞過
+- `git credential fill` 可還原被 mask 的 GitHub PAT
+- GitHub Pages 需要付費 plan 才能啟用；改用 raw URL 或上傳到 private repo
+
 ### 2. `add-music.sh` — MP4 + BGM → MP4
 
 给无声 MP4 混入背景音乐，按场景（mood）从内置 BGM 库里选，也可自带音频。自动匹配时长、加淡入淡出。

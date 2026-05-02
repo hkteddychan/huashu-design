@@ -1,0 +1,275 @@
+{
+  "name": "Sports Video Media Assets Upload",
+  "nodes": [
+    {
+      "id": "webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "name": "Webhook",
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "svma-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "svma-upload"
+    },
+    {
+      "id": "parse1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "name": "Parse Payload",
+      "position": [540, 300],
+      "parameters": {
+        "mode": "raw",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {"id": "news_id", "value": "={{ $json.news_id }}", "type": "string"},
+            {"id": "title", "value": "={{ $json.title }}", "type": "string"},
+            {"id": "event", "value": "={{ $json.event }}", "type": "string"},
+            {"id": "layout", "value": "={{ $json.layout }}", "type": "string"},
+            {"id": "video_path", "value": "={{ $json.video_path }}", "type": "string"},
+            {"id": "audio_path", "value": "={{ $json.audio_path }}", "type": "string"},
+            {"id": "image_urls", "value": "={{ $json.image_urls }}", "type": "string"},
+            {"id": "speech_content", "value": "={{ $json.speech_content }}", "type": "string"},
+            {"id": "tts_voice", "value": "={{ $json.tts_voice }}", "type": "string"},
+            {"id": "tts_rate", "value": "={{ $json.tts_rate }}", "type": "string"},
+            {"id": "tts_volume", "value": "={{ $json.tts_volume }}", "type": "string"},
+            {"id": "webhook_url", "value": "={{ $json.webhook_url }}", "type": "string"}
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "switch1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "name": "Route by Media Type",
+      "position": [840, 300],
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $json.video_path ? 0 : $json.audio_path ? 1 : 2 }}",
+        "fallbackOutput": 2,
+        "options": {}
+      }
+    },
+    {
+      "id": "read_video1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "name": "Read Video Binary",
+      "position": [1140, 150],
+      "parameters": {
+        "method": "GET",
+        "url": "=file://{{ $json.video_path }}",
+        "response": {"response": {"responseFormat": "file"}},
+        "options": {}
+      }
+    },
+    {
+      "id": "read_audio1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "name": "Read Audio Binary",
+      "position": [1140, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=file://{{ $json.audio_path }}",
+        "response": {"response": {"responseFormat": "file"}},
+        "options": {}
+      }
+    },
+    {
+      "id": "read_images1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "name": "Read Images Binary",
+      "position": [1140, 450],
+      "parameters": {
+        "method": "GET",
+        "url": "=file://{{ $json.image_urls }}",
+        "response": {"response": {"responseFormat": "file"}},
+        "options": {}
+      }
+    },
+    {
+      "id": "upload_video1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "name": "Upload Video to Drive",
+      "position": [1500, 150],
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "YOUR_GOOGLE_DRIVE_CRED_ID", "name": "Google Drive"}
+      },
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $json.news_id }}_video.mp4",
+        "folderId": {"__rl": true, "mode": "list", "value": "root"},
+        "options": {"simplifyOutput": true}
+      }
+    },
+    {
+      "id": "upload_audio1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "name": "Upload Audio to Drive",
+      "position": [1500, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "YOUR_GOOGLE_DRIVE_CRED_ID", "name": "Google Drive"}
+      },
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $json.news_id }}_audio.ogg",
+        "folderId": {"__rl": true, "mode": "list", "value": "root"},
+        "options": {"simplifyOutput": true}
+      }
+    },
+    {
+      "id": "upload_images1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "name": "Upload Images to Drive",
+      "position": [1500, 450],
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "YOUR_GOOGLE_DRIVE_CRED_ID", "name": "Google Drive"}
+      },
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ $json.news_id }}_images.zip",
+        "folderId": {"__rl": true, "mode": "list", "value": "root"},
+        "options": {"simplifyOutput": true}
+      }
+    },
+    {
+      "id": "merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "name": "Merge Upload Results",
+      "position": [1860, 300],
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare_row1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "name": "Prepare Data Table Row",
+      "position": [2100, 300],
+      "parameters": {
+        "mode": "raw",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {"id": "news_id", "value": "={{ $('Parse Payload').item.json.news_id }}", "type": "string"},
+            {"id": "title", "value": "={{ $('Parse Payload').item.json.title }}", "type": "string"},
+            {"id": "event", "value": "={{ $('Parse Payload').item.json.event }}", "type": "string"},
+            {"id": "layout", "value": "={{ $('Parse Payload').item.json.layout }}", "type": "string"},
+            {"id": "video_path", "value": "={{ $('Parse Payload').item.json.video_path }}", "type": "string"},
+            {"id": "video_drive_id", "value": "={{ $json.video_drive_id }}", "type": "string"},
+            {"id": "video_drive_link", "value": "={{ $json.webViewLink }}", "type": "string"},
+            {"id": "image_urls", "value": "={{ $('Parse Payload').item.json.image_urls }}", "type": "string"},
+            {"id": "images_drive_ids", "value": "={{ $json.images_drive_id }}", "type": "string"},
+            {"id": "images_drive_links", "value": "={{ $json.images_webViewLink }}", "type": "string"},
+            {"id": "audio_path", "value": "={{ $('Parse Payload').item.json.audio_path }}", "type": "string"},
+            {"id": "audio_drive_id", "value": "={{ $json.audio_drive_id }}", "type": "string"},
+            {"id": "audio_drive_link", "value": "={{ $json.audio_webViewLink }}", "type": "string"},
+            {"id": "speech_content", "value": "={{ $('Parse Payload').item.json.speech_content }}", "type": "string"},
+            {"id": "tts_voice", "value": "={{ $('Parse Payload').item.json.tts_voice }}", "type": "string"},
+            {"id": "tts_rate", "value": "={{ $('Parse Payload').item.json.tts_rate }}", "type": "string"},
+            {"id": "tts_volume", "value": "={{ $('Parse Payload').item.json.tts_volume }}", "type": "string"},
+            {"id": "status", "value": "completed", "type": "string"},
+            {"id": "webhook_url", "value": "={{ $('Parse Payload').item.json.webhook_url }}", "type": "string"},
+            {"id": "created_at", "value": "={{ $now.toISO() }}", "type": "string"}
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "insert_row1",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "name": "Insert to Data Table",
+      "position": [2340, 300],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {"__rl": true, "mode": "id", "value": "1MsWtZuWsQe7PJ75"},
+        "columns": "={{ JSON.stringify($json) }}",
+        "options": {"optimizeBulk": false}
+      }
+    },
+    {
+      "id": "respond1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "name": "Respond Webhook",
+      "position": [2580, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'completed', news_id: $('Parse Payload').item.json.news_id, video_drive_link: $json.video_drive_link, audio_drive_link: $json.audio_drive_link }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Parse Payload", "type": "main", "index": 0}]]
+    },
+    "Parse Payload": {
+      "main": [[{"node": "Route by Media Type", "type": "main", "index": 0}]]
+    },
+    "Route by Media Type": {
+      "main": [
+        [{"node": "Read Video Binary", "type": "main", "index": 0}],
+        [{"node": "Read Audio Binary", "type": "main", "index": 0}],
+        [{"node": "Read Images Binary", "type": "main", "index": 0}]
+      ]
+    },
+    "Read Video Binary": {
+      "main": [[{"node": "Upload Video to Drive", "type": "main", "index": 0}]]
+    },
+    "Read Audio Binary": {
+      "main": [[{"node": "Upload Audio to Drive", "type": "main", "index": 0}]]
+    },
+    "Read Images Binary": {
+      "main": [[{"node": "Upload Images to Drive", "type": "main", "index": 0}]]
+    },
+    "Upload Video to Drive": {
+      "main": [[{"node": "Merge Upload Results", "type": "main", "index": 0}]]
+    },
+    "Upload Audio to Drive": {
+      "main": [[{"node": "Merge Upload Results", "type": "main", "index": 1}]]
+    },
+    "Upload Images to Drive": {
+      "main": [[{"node": "Merge Upload Results", "type": "main", "index": 2}]]
+    },
+    "Merge Upload Results": {
+      "main": [[{"node": "Prepare Data Table Row", "type": "main", "index": 0}]]
+    },
+    "Prepare Data Table Row": {
+      "main": [[{"node": "Insert to Data Table", "type": "main", "index": 0}]]
+    },
+    "Insert to Data Table": {
+      "main": [[{"node": "Respond Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}

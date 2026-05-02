@@ -655,6 +655,87 @@ Screen 组件接 callback props（`onEnter`、`onClose`、`onTabChange`、`onOpe
 - 关心flow、copy、还是visuals？
 - 希望Tweak什么？
 
+## Telegram 交付约束（重要，必读）
+
+当 HTML deck 需要透过 Telegram Bot 发送时，以下三条约束**强制执行**，违反会导致页面在 Telegram 内无法正常显示：
+
+### 1. 所有 CSS 必须 Inline（禁止外部引用）
+
+❌ 禁止使用：
+```html
+<link rel="stylesheet" href="shared/styles.css">
+```
+✅ 正确做法：
+```html
+<style>
+  /* 所有样式写在 <style> 标签内 */
+  body { background: #0a0e17; }
+</style>
+```
+
+### 2. 禁止 Subdirectory 依赖（所有内容单文件）
+
+❌ 禁止架构：
+```
+mydeck/
+  index.html       ← 使用 iframe
+  slides/
+    slide1.html
+    slide2.html
+  shared/
+    styles.css
+```
+原因：Telegram 只会发送 `index.html`，不会自动发送子目录内的档案，导致 iframe 全黑。
+
+✅ 正确做法（Slide 作为 JS String Literals）：
+```javascript
+const slides = [`
+  <style>body{background:#0a0e17}</style>
+  <div>Slide 1 内容</div>
+`, `
+  <style>body{background:#1a1a2e}</style>
+  <div>Slide 2 内容</div>
+`];
+
+// 切换时替换 innerHTML
+stage.innerHTML = slides[currentIndex];
+```
+
+### 3. 响应式 Layout（防止 Chromebook 小视窗崩溃）
+
+`position: fixed` + `transform: scale()` 在视窗阔度 < 1280px 时计算错误，导致内容被推到右侧或遮罩。
+
+✅ 推荐模式：CSS `clamp()` + `vw/vh` 自适应字体
+```css
+/* 不使用 transform scale，改用 clamp() 流体字体 */
+.slide-title {
+  font-size: clamp(18px, 3vw, 34px); /* 最小值, 流畅值, 最大值 */
+}
+```
+
+✅ 推荐模式：Flexbox 居中（取代 transform）
+```css
+#wrap {
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+#stage {
+  flex-shrink: 0; /* 防止被压缩 */
+}
+```
+
+### 触发关键词
+
+当用户提及以下任何一项，立即套用本约束：
+- 「喺 Telegram 入面打开」
+- 「用 Chromebook 睇」
+- 「右侧出界」
+- 「唔正常显示」
+- 「分享去 Telegram」
+- 「send via Telegram」
+- 「HTML 在右侧」
+
 ## 异常处理
 
 流程假设用户配合、环境正常。实操常遇以下异常，预定义fallback：
